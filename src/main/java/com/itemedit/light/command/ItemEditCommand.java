@@ -77,6 +77,9 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
             case "ability":
                 handleAbility(player, item, args);
                 break;
+            case "hidetooltips":
+                handleHideTooltips(player, item, args);
+                break;
             default:
                 sendHelp(player);
                 break;
@@ -97,6 +100,7 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         player.sendMessage("§e/ie flag <add/remove/clear> <flag> §7- Manages item flags.");
         player.sendMessage("§e/ie attribute <add/remove/clear> <attr> [val] §7- Manages attributes.");
         player.sendMessage("§e/ie ability <add/remove/list> [ability] §7- Manages item abilities.");
+        player.sendMessage("§e/ie hidetooltips [true/false] §7- Hides or shows item tooltips.");
     }
 
     private Component parseText(String text) {
@@ -379,6 +383,37 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         saveItem(player, item, meta);
     }
 
+    private void handleHideTooltips(Player player, ItemStack item, String[] args) {
+        ItemMeta meta = item.getItemMeta();
+        List<ItemFlag> hideFlags = new ArrayList<>();
+        boolean allHidden = true;
+        for (ItemFlag flag : ItemFlag.values()) {
+            if (flag.name().startsWith("HIDE_")) {
+                hideFlags.add(flag);
+                if (!meta.hasItemFlag(flag)) {
+                    allHidden = false;
+                }
+            }
+        }
+
+        boolean hide;
+        if (args.length >= 2) {
+            hide = Boolean.parseBoolean(args[1]);
+        } else {
+            hide = !allHidden;
+        }
+
+        for (ItemFlag flag : hideFlags) {
+            if (hide) {
+                meta.addItemFlags(flag);
+            } else {
+                meta.removeItemFlags(flag);
+            }
+        }
+        saveItem(player, item, meta);
+        player.sendMessage("§aSet hide tooltips to " + hide + ".");
+    }
+
     private void handleAbility(Player player, ItemStack item, String[] args) {
         if (args.length < 2) {
             player.sendMessage("§cUsage: /ie ability <add/remove/list> [ability]");
@@ -435,7 +470,7 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(Arrays.asList("rename", "lore", "enchant", "unbreakable", "flag", "attribute", "ability"), args[0]);
+            return filter(Arrays.asList("rename", "lore", "enchant", "unbreakable", "flag", "attribute", "ability", "hidetooltips"), args[0]);
         }
 
         if (args.length == 2) {
@@ -446,6 +481,8 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
                 case "enchant":
                     return filter(Arrays.stream(Enchantment.values()).map(e -> e.getKey().getKey()).collect(Collectors.toList()), args[1]);
                 case "unbreakable":
+                    return filter(Arrays.asList("true", "false"), args[1]);
+                case "hidetooltips":
                     return filter(Arrays.asList("true", "false"), args[1]);
                 case "flag":
                 case "attribute":
