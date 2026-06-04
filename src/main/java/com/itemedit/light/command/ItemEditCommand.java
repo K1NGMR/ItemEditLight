@@ -316,6 +316,45 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         saveItem(player, item, meta);
     }
 
+    private List<Attribute> getAllAttributes() {
+        List<Attribute> list = new ArrayList<>();
+        try {
+            Class<?> attributeClass = Class.forName("org.bukkit.attribute.Attribute");
+            if (attributeClass.isEnum()) {
+                for (Object val : (Object[]) attributeClass.getMethod("values").invoke(null)) {
+                    list.add((Attribute) val);
+                }
+            } else {
+                java.lang.reflect.Field field = Registry.class.getField("ATTRIBUTE");
+                Registry<?> registry = (Registry<?>) field.get(null);
+                for (Object obj : registry) {
+                    if (obj instanceof Attribute) {
+                        list.add((Attribute) obj);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Fallback
+        }
+        return list;
+    }
+
+    private Attribute getAttributeByName(String name) {
+        String upper = name.toUpperCase();
+        for (Attribute a : getAllAttributes()) {
+            if (a instanceof org.bukkit.Keyed) {
+                String key = ((org.bukkit.Keyed) a).getKey().getKey().toUpperCase();
+                if (key.equalsIgnoreCase(upper) || key.replace("GENERIC_", "").equalsIgnoreCase(upper)) {
+                    return a;
+                }
+            }
+            if (a.name().equalsIgnoreCase(upper) || a.name().replace("GENERIC_", "").equalsIgnoreCase(upper)) {
+                return a;
+            }
+        }
+        return null;
+    }
+
     private void handleAttribute(Player player, ItemStack item, String[] args) {
         if (args.length < 2) {
             player.sendMessage("§cUsage: /ie attribute <add/remove/clear> [attribute] [value]");
@@ -326,7 +365,7 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         ItemMeta meta = item.getItemMeta();
 
         if (operation.equalsIgnoreCase("clear")) {
-            for (Attribute attr : Attribute.values()) {
+            for (Attribute attr : getAllAttributes()) {
                 meta.removeAttributeModifier(attr);
             }
             saveItem(player, item, meta);
@@ -340,13 +379,7 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         }
 
         String attrName = args[2].toUpperCase();
-        Attribute attribute = null;
-        for (Attribute a : Attribute.values()) {
-            if (a.name().equalsIgnoreCase(attrName) || a.name().replace("GENERIC_", "").equalsIgnoreCase(attrName)) {
-                attribute = a;
-                break;
-            }
-        }
+        Attribute attribute = getAttributeByName(attrName);
 
         if (attribute == null) {
             player.sendMessage("§cInvalid attribute.");
@@ -500,7 +533,15 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
                 }
             } else if (sub.equalsIgnoreCase("attribute")) {
                 if (op.equalsIgnoreCase("add") || op.equalsIgnoreCase("remove")) {
-                    return filter(Arrays.stream(Attribute.values()).map(Enum::name).collect(Collectors.toList()), args[2]);
+                    List<String> names = getAllAttributes().stream()
+                            .map(a -> {
+                                if (a instanceof org.bukkit.Keyed) {
+                                    return ((org.bukkit.Keyed) a).getKey().getKey().toUpperCase();
+                                }
+                                return a.name();
+                            })
+                            .collect(Collectors.toList());
+                    return filter(names, args[2]);
                 }
             } else if (sub.equalsIgnoreCase("ability")) {
                 if (op.equalsIgnoreCase("add") || op.equalsIgnoreCase("remove")) {
