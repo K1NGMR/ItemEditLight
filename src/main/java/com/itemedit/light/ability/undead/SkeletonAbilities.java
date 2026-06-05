@@ -21,7 +21,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
+import com.itemedit.light.utils.CompatRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -99,7 +99,7 @@ class BoneShield extends Ability {
         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_BONE_BLOCK_PLACE, 1.2f, 0.9f);
         SkeletonAbilities.registerShield(player.getUniqueId(), System.currentTimeMillis() + (long) (duration * 1000));
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int ticks = 0;
             @Override
             public void run() {
@@ -116,7 +116,7 @@ class BoneShield extends Ability {
                 pLoc.getWorld().spawnParticle(Particle.CLOUD, particleLoc2, 1, 0, 0, 0, 0);
                 ticks++;
             }
-        }.runTaskTimer(plugin, 0L, 5L);
+        }.runTaskTimer(plugin, player, 0L, 5L);
 
         return true;
     }
@@ -143,7 +143,7 @@ class ArrowHail extends Ability {
 
         int count = plugin.getConfig().getInt("abilities.arrow_hail.arrows", 10);
         for (int i = 0; i < count; i++) {
-            new BukkitRunnable() {
+            new CompatRunnable() {
                 @Override
                 public void run() {
                     Location spawnLoc = targetLoc.clone().add(
@@ -156,7 +156,7 @@ class ArrowHail extends Ability {
                     arrow.setVelocity(new Vector(0, -1.5, 0));
                     spawnLoc.getWorld().playSound(spawnLoc, Sound.ENTITY_ARROW_SHOOT, 0.5f, 1.2f);
                 }
-            }.runTaskLater(plugin, i * 2L);
+            }.runTaskLater(plugin, targetLoc, i * 2L);
         }
         return true;
     }
@@ -192,7 +192,7 @@ class SkeletonArchers extends Ability {
             summoned.add(skeleton);
         }
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             @Override
             public void run() {
                 for (Skeleton s : summoned) {
@@ -202,7 +202,7 @@ class SkeletonArchers extends Ability {
                     }
                 }
             }
-        }.runTaskLater(plugin, 300L); // 15 seconds
+        }.runTaskLater(plugin, player, 300L); // 15 seconds
 
         return true;
     }
@@ -228,7 +228,7 @@ class BoneTrap extends Ability {
         Location loc = living.getLocation();
         living.getWorld().playSound(loc, Sound.BLOCK_BONE_BLOCK_PLACE, 1.0f, 0.7f);
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int ticks = 0;
             @Override
             public void run() {
@@ -240,7 +240,7 @@ class BoneTrap extends Ability {
                 living.getWorld().spawnParticle(Particle.CRIT, loc.clone().add(0, 0.5, 0), 6, 0.3, 0.5, 0.3, 0.05);
                 ticks++;
             }
-        }.runTaskTimer(plugin, 0L, 5L);
+        }.runTaskTimer(plugin, living, 0L, 5L);
 
         return true;
     }

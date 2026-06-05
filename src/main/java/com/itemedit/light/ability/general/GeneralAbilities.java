@@ -21,7 +21,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
+import com.itemedit.light.utils.CompatRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -102,7 +102,7 @@ class IcePath extends Ability {
         player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, (int) (duration * 20), 1));
         player.getWorld().playSound(player.getLocation(), Sound.BLOCK_GLASS_PLACE, 1.0f, 1.2f);
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int ticks = 0;
             @Override
             public void run() {
@@ -119,32 +119,32 @@ class IcePath extends Ability {
                             if (b.getType() == Material.WATER) {
                                 b.setType(Material.PACKED_ICE);
                                 final Location bLoc = b.getLocation();
-                                new BukkitRunnable() {
+                                new CompatRunnable() {
                                     @Override
                                     public void run() {
                                         if (bLoc.getBlock().getType() == Material.PACKED_ICE) {
                                             bLoc.getBlock().setType(Material.WATER);
                                         }
                                     }
-                                }.runTaskLater(plugin, 80L);
+                                }.runTaskLater(plugin, bLoc, 80L);
                             } else if (b.getType() == Material.LAVA) {
                                 b.setType(Material.OBSIDIAN);
                                 final Location bLoc = b.getLocation();
-                                new BukkitRunnable() {
+                                new CompatRunnable() {
                                     @Override
                                     public void run() {
                                         if (bLoc.getBlock().getType() == Material.OBSIDIAN) {
                                             bLoc.getBlock().setType(Material.LAVA);
                                         }
                                     }
-                                }.runTaskLater(plugin, 80L);
+                                }.runTaskLater(plugin, bLoc, 80L);
                             }
                         }
                     }
                 }
                 ticks += 2;
             }
-        }.runTaskTimer(plugin, 0L, 2L);
+        }.runTaskTimer(plugin, player, 0L, 2L);
 
         return true;
     }
@@ -183,7 +183,7 @@ class Blizzard extends Ability {
 
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_ELYTRA_FLYING, 1.0f, 1.5f);
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int ticks = 0;
             @Override
             public void run() {
@@ -211,7 +211,7 @@ class Blizzard extends Ability {
                 }
                 ticks += 2;
             }
-        }.runTaskTimer(plugin, 0L, 2L);
+        }.runTaskTimer(plugin, player, 0L, 2L);
 
         return true;
     }
@@ -283,7 +283,7 @@ class Entangle extends Ability {
         b1.setType(Material.OAK_LEAVES);
         b2.setType(Material.OAK_LEAVES);
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int ticks = 0;
             @Override
             public void run() {
@@ -297,7 +297,7 @@ class Entangle extends Ability {
                 living.getWorld().spawnParticle(Particle.CHERRY_LEAVES, tLoc.clone().add(0.5, 1, 0.5), 3, 0.3, 0.5, 0.3, 0.02);
                 ticks++;
             }
-        }.runTaskTimer(plugin, 0L, 5L);
+        }.runTaskTimer(plugin, living, 0L, 5L);
 
         return true;
     }
@@ -409,7 +409,7 @@ class ChainLightning extends Ability {
         List<LivingEntity> hit = new ArrayList<>();
         hit.add(player); // prevent hitting caster
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int jumps = 0;
             LivingEntity active = current;
 
@@ -435,7 +435,7 @@ class ChainLightning extends Ability {
                 active = next;
                 jumps++;
             }
-        }.runTaskTimer(plugin, 0L, 4L);
+        }.runTaskTimer(plugin, player, 0L, 4L);
 
         return true;
     }
@@ -455,7 +455,7 @@ class WindBlade extends Ability {
         Vector dir = origin.getDirection().normalize();
         player.getWorld().playSound(origin, Sound.ENTITY_ARROW_SHOOT, 1.0f, 1.2f);
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int steps = 0;
             Location current = origin.clone();
 
@@ -467,17 +467,19 @@ class WindBlade extends Ability {
                 }
 
                 current.add(dir.clone().multiply(0.5));
-                current.getWorld().spawnParticle(Particle.CLOUD, current, 1, 0, 0, 0, 0);
+                com.itemedit.light.utils.SchedulerUtils.runTask(plugin, current, () -> {
+                    current.getWorld().spawnParticle(Particle.CLOUD, current, 1, 0, 0, 0, 0);
 
-                for (Entity entity : current.getWorld().getNearbyEntities(current, 0.8, 0.8, 0.8)) {
-                    if (entity instanceof LivingEntity && !entity.equals(player)) {
-                        ((LivingEntity) entity).damage(5.0, player);
-                        entity.setVelocity(dir.clone().multiply(0.8).setY(0.2));
+                    for (Entity entity : current.getWorld().getNearbyEntities(current, 0.8, 0.8, 0.8)) {
+                        if (entity instanceof LivingEntity && !entity.equals(player)) {
+                            ((LivingEntity) entity).damage(5.0, player);
+                            entity.setVelocity(dir.clone().multiply(0.8).setY(0.2));
+                        }
                     }
-                }
+                });
                 steps++;
             }
-        }.runTaskTimer(plugin, 0L, 1L); // fallback safe handle
+        }.runTaskTimer(plugin, player, 0L, 1L); // fallback safe handle
 
         return true;
     }

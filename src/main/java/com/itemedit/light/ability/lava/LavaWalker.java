@@ -10,7 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
+import com.itemedit.light.utils.CompatRunnable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,7 +34,7 @@ public class LavaWalker extends Ability {
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_FIRECHARGE_USE, 1.0f, 0.8f);
 
         // Periodically turn lava to magma/obsidian under feet
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int ticksElapsed = 0;
 
             @Override
@@ -59,7 +59,7 @@ public class LavaWalker extends Ability {
                                     block.setType(Material.MAGMA_BLOCK);
 
                                     // Schedule reversion
-                                    new BukkitRunnable() {
+                                    new CompatRunnable() {
                                         @Override
                                         public void run() {
                                             if (blockLoc.getBlock().getType() == Material.MAGMA_BLOCK) {
@@ -67,7 +67,7 @@ public class LavaWalker extends Ability {
                                             }
                                             modifiedBlocks.remove(blockLoc);
                                         }
-                                    }.runTaskLater(plugin, 80L); // 4 seconds
+                                    }.runTaskLater(plugin, blockLoc, 80L); // 4 seconds
                                 }
                             }
                         }
@@ -75,7 +75,7 @@ public class LavaWalker extends Ability {
                 }
                 ticksElapsed += 2;
             }
-        }.runTaskTimer(plugin, 0L, 2L);
+        }.runTaskTimer(plugin, player, 0L, 2L);
 
         return true;
     }

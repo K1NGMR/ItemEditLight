@@ -17,7 +17,7 @@ import org.bukkit.entity.ShulkerBullet;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
+import com.itemedit.light.utils.CompatRunnable;
 import org.bukkit.util.Vector;
 
 import java.util.Collection;
@@ -160,7 +160,7 @@ class EnderRift extends Ability {
         Location riftLoc = target.getLocation().add(0.5, 1.5, 0.5);
         riftLoc.getWorld().playSound(riftLoc, Sound.BLOCK_PORTAL_TRIGGER, 1.0f, 1.5f);
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             int ticks = 0;
             @Override
             public void run() {
@@ -183,7 +183,7 @@ class EnderRift extends Ability {
                 }
                 ticks++;
             }
-        }.runTaskTimer(plugin, 0L, 4L);
+        }.runTaskTimer(plugin, riftLoc, 0L, 4L);
 
         return true;
     }

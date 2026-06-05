@@ -2,6 +2,7 @@ package com.itemedit.light.command;
 
 import com.itemedit.light.ItemEditLight;
 import com.itemedit.light.ability.Ability;
+import com.itemedit.light.utils.LanguageManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -30,6 +31,10 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         this.plugin = plugin;
     }
 
+    private void msg(Player p, String key, Object... args) {
+        p.sendMessage(LanguageManager.getMessage(p, key, args));
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
@@ -39,13 +44,13 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
 
         Player player = (Player) sender;
         if (!player.hasPermission("itemedit.use")) {
-            player.sendMessage("§cYou do not have permission to use this command.");
+            msg(player, "no_permission");
             return true;
         }
 
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item == null || item.getType().isAir()) {
-            player.sendMessage("§cYou must hold an item in your main hand.");
+            msg(player, "hold_item");
             return true;
         }
 
@@ -119,19 +124,19 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
 
     private void handleRename(Player player, ItemStack item, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§cUsage: /ie rename <name>");
+            msg(player, "usage_rename");
             return;
         }
         String name = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
         ItemMeta meta = item.getItemMeta();
         meta.displayName(parseText(name));
         saveItem(player, item, meta);
-        player.sendMessage("§aItem renamed successfully!");
+        msg(player, "rename_success");
     }
 
     private void handleLore(Player player, ItemStack item, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§cUsage: /ie lore <add/set/remove/clear> [args]");
+            msg(player, "usage_lore");
             return;
         }
 
@@ -145,24 +150,24 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         switch (operation) {
             case "add":
                 if (args.length < 3) {
-                    player.sendMessage("§cUsage: /ie lore add <text>");
+                    msg(player, "usage_lore_add");
                     return;
                 }
                 String addedText = String.join(" ", Arrays.copyOfRange(args, 2, args.length));
                 lore.add(parseText(addedText));
                 meta.lore(lore);
                 saveItem(player, item, meta);
-                player.sendMessage("§aAdded lore line.");
+                msg(player, "lore_add_success");
                 break;
             case "set":
                 if (args.length < 4) {
-                    player.sendMessage("§cUsage: /ie lore set <line> <text>");
+                    msg(player, "usage_lore_set");
                     return;
                 }
                 try {
                     int line = Integer.parseInt(args[2]) - 1;
                     if (line < 0 || line > lore.size()) {
-                        player.sendMessage("§cInvalid line number. Current size is " + lore.size() + ".");
+                        msg(player, "lore_invalid_line", "%size%", lore.size());
                         return;
                     }
                     String text = String.join(" ", Arrays.copyOfRange(args, 3, args.length));
@@ -174,44 +179,44 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
                     }
                     meta.lore(lore);
                     saveItem(player, item, meta);
-                    player.sendMessage("§aSet lore line " + (line + 1) + ".");
+                    msg(player, "lore_set_success", "%line%", line + 1);
                 } catch (NumberFormatException e) {
-                    player.sendMessage("§cLine must be a number.");
+                    msg(player, "line_must_be_number");
                 }
                 break;
             case "remove":
                 if (args.length < 3) {
-                    player.sendMessage("§cUsage: /ie lore remove <line>");
+                    msg(player, "usage_lore_remove");
                     return;
                 }
                 try {
                     int line = Integer.parseInt(args[2]) - 1;
                     if (line < 0 || line >= lore.size()) {
-                        player.sendMessage("§cLine number out of bounds.");
+                        msg(player, "lore_out_of_bounds");
                         return;
                     }
                     lore.remove(line);
                     meta.lore(lore);
                     saveItem(player, item, meta);
-                    player.sendMessage("§aRemoved lore line " + (line + 1) + ".");
+                    msg(player, "lore_remove_success", "%line%", line + 1);
                 } catch (NumberFormatException e) {
-                    player.sendMessage("§cLine must be a number.");
+                    msg(player, "line_must_be_number");
                 }
                 break;
             case "clear":
                 meta.lore(null);
                 saveItem(player, item, meta);
-                player.sendMessage("§aLore cleared.");
+                msg(player, "lore_clear_success");
                 break;
             default:
-                player.sendMessage("§cUnknown operation. Use add, set, remove, or clear.");
+                msg(player, "unknown_operation");
                 break;
         }
     }
 
     private void handleEnchant(Player player, ItemStack item, String[] args) {
         if (args.length < 3) {
-            player.sendMessage("§cUsage: /ie enchant <enchantment> <level>");
+            msg(player, "usage_enchant");
             return;
         }
 
@@ -220,7 +225,7 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         try {
             level = Integer.parseInt(args[2]);
         } catch (NumberFormatException e) {
-            player.sendMessage("§cLevel must be a number.");
+            msg(player, "level_must_be_number");
             return;
         }
 
@@ -233,7 +238,7 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         }
 
         if (enchantment == null) {
-            player.sendMessage("§cEnchantment not found.");
+            msg(player, "enchant_not_found");
             return;
         }
 
@@ -241,30 +246,30 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
             item.removeEnchantment(enchantment);
             player.getInventory().setItemInMainHand(item);
             player.updateInventory();
-            player.sendMessage("§aRemoved enchantment " + enchantment.getKey().getKey() + ".");
+            msg(player, "enchant_remove_success", "%enchant%", enchantment.getKey().getKey());
         } else {
             ItemMeta meta = item.getItemMeta();
             meta.addEnchant(enchantment, level, true);
             saveItem(player, item, meta);
-            player.sendMessage("§aAdded enchantment " + enchantment.getKey().getKey() + " Level " + level + ".");
+            msg(player, "enchant_add_success", "%enchant%", enchantment.getKey().getKey(), "%level%", level);
         }
     }
 
     private void handleUnbreakable(Player player, ItemStack item, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§cUsage: /ie unbreakable <true/false>");
+            msg(player, "usage_unbreakable");
             return;
         }
         boolean state = Boolean.parseBoolean(args[1]);
         ItemMeta meta = item.getItemMeta();
         meta.setUnbreakable(state);
         saveItem(player, item, meta);
-        player.sendMessage("§aSet unbreakable to " + state + ".");
+        msg(player, "unbreakable_success", "%state%", state);
     }
 
     private void handleFlag(Player player, ItemStack item, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§cUsage: /ie flag <add/remove/clear> [flag]");
+            msg(player, "usage_flag");
             return;
         }
 
@@ -276,12 +281,12 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
                 meta.removeItemFlags(flag);
             }
             saveItem(player, item, meta);
-            player.sendMessage("§aCleared all item flags.");
+            msg(player, "flag_clear_success");
             return;
         }
 
         if (args.length < 3) {
-            player.sendMessage("§cUsage: /ie flag <add/remove> <flag>");
+            msg(player, "usage_flag_op");
             return;
         }
 
@@ -299,18 +304,18 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         }
 
         if (flag == null) {
-            player.sendMessage("§cInvalid item flag.");
+            msg(player, "invalid_flag");
             return;
         }
 
         if (operation.equalsIgnoreCase("add")) {
             meta.addItemFlags(flag);
-            player.sendMessage("§aAdded flag " + flag.name());
+            msg(player, "flag_add_success", "%flag%", flag.name());
         } else if (operation.equalsIgnoreCase("remove")) {
             meta.removeItemFlags(flag);
-            player.sendMessage("§aRemoved flag " + flag.name());
+            msg(player, "flag_remove_success", "%flag%", flag.name());
         } else {
-            player.sendMessage("§cUnknown operation. Use add, remove, or clear.");
+            msg(player, "unknown_operation");
             return;
         }
         saveItem(player, item, meta);
@@ -357,7 +362,7 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
 
     private void handleAttribute(Player player, ItemStack item, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§cUsage: /ie attribute <add/remove/clear> [attribute] [value]");
+            msg(player, "usage_attribute");
             return;
         }
 
@@ -369,12 +374,12 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
                 meta.removeAttributeModifier(attr);
             }
             saveItem(player, item, meta);
-            player.sendMessage("§aCleared all attributes.");
+            msg(player, "attribute_clear_success");
             return;
         }
 
         if (args.length < 3) {
-            player.sendMessage("§cUsage: /ie attribute <add/remove> <attribute> [value]");
+            msg(player, "usage_attribute_op");
             return;
         }
 
@@ -382,20 +387,20 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         Attribute attribute = getAttributeByName(attrName);
 
         if (attribute == null) {
-            player.sendMessage("§cInvalid attribute.");
+            msg(player, "invalid_attribute");
             return;
         }
 
         if (operation.equalsIgnoreCase("add")) {
             if (args.length < 4) {
-                player.sendMessage("§cUsage: /ie attribute add <attribute> <value>");
+                msg(player, "usage_attribute_add");
                 return;
             }
             double val;
             try {
                 val = Double.parseDouble(args[3]);
             } catch (NumberFormatException e) {
-                player.sendMessage("§cValue must be a number.");
+                msg(player, "value_must_be_number");
                 return;
             }
             AttributeModifier modifier = new AttributeModifier(
@@ -405,12 +410,12 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
                     AttributeModifier.Operation.ADD_NUMBER
             );
             meta.addAttributeModifier(attribute, modifier);
-            player.sendMessage("§aAdded attribute " + attribute.name() + " with value " + val + ".");
+            msg(player, "attribute_add_success", "%attr%", attribute.name(), "%val%", val);
         } else if (operation.equalsIgnoreCase("remove")) {
             meta.removeAttributeModifier(attribute);
-            player.sendMessage("§aRemoved attribute " + attribute.name() + ".");
+            msg(player, "attribute_remove_success", "%attr%", attribute.name());
         } else {
-            player.sendMessage("§cUnknown operation. Use add, remove, or clear.");
+            msg(player, "unknown_operation");
             return;
         }
         saveItem(player, item, meta);
@@ -444,18 +449,18 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
             }
         }
         saveItem(player, item, meta);
-        player.sendMessage("§aSet hide tooltips to " + hide + ".");
+        msg(player, "hidetooltips_success", "%state%", hide);
     }
 
     private void handleAbility(Player player, ItemStack item, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§cUsage: /ie ability <add/remove/clear/list> [ability]");
+            msg(player, "usage_ability");
             return;
         }
 
         String operation = args[1].toLowerCase();
         if (operation.equalsIgnoreCase("list")) {
-            player.sendMessage("§6§lAvailable Abilities:");
+            msg(player, "ability_list_header");
             for (Ability ability : plugin.getAbilityManager().getRegisteredAbilities()) {
                 player.sendMessage("§e- " + ability.getId() + " §7(" + ability.getName() + "): " + ability.getDescription());
             }
@@ -466,12 +471,12 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
             plugin.getAbilityManager().setItemAbilities(item, new ArrayList<>());
             player.getInventory().setItemInMainHand(item);
             player.updateInventory();
-            player.sendMessage("§aCleared all abilities from your item.");
+            msg(player, "ability_clear_success");
             return;
         }
 
         if (args.length < 3) {
-            player.sendMessage("§cUsage: /ie ability <add/remove> <ability_id>");
+            msg(player, "usage_ability_op");
             return;
         }
 
@@ -481,30 +486,30 @@ public class ItemEditCommand implements CommandExecutor, TabCompleter {
         if (operation.equalsIgnoreCase("add")) {
             Ability ability = plugin.getAbilityManager().getAbility(abilityId);
             if (ability == null) {
-                player.sendMessage("§cAbility '" + abilityId + "' does not exist.");
+                msg(player, "ability_not_exist", "%ability%", abilityId);
                 return;
             }
             if (current.contains(abilityId)) {
-                player.sendMessage("§cThis item already has this ability.");
+                msg(player, "ability_already_has");
                 return;
             }
             current.add(abilityId);
             plugin.getAbilityManager().setItemAbilities(item, current);
             player.getInventory().setItemInMainHand(item);
             player.updateInventory();
-            player.sendMessage("§aAdded ability '" + ability.getName() + "' to your item.");
+            msg(player, "ability_add_success", "%ability%", ability.getName());
         } else if (operation.equalsIgnoreCase("remove")) {
             if (!current.contains(abilityId)) {
-                player.sendMessage("§cThis item does not have this ability.");
+                msg(player, "ability_not_has");
                 return;
             }
             current.remove(abilityId);
             plugin.getAbilityManager().setItemAbilities(item, current);
             player.getInventory().setItemInMainHand(item);
             player.updateInventory();
-            player.sendMessage("§aRemoved ability '" + abilityId + "' from your item.");
+            msg(player, "ability_remove_success", "%ability%", abilityId);
         } else {
-            player.sendMessage("§cUnknown operation. Use add, remove, or list.");
+            msg(player, "ability_unknown_op");
         }
     }
 

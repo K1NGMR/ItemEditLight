@@ -9,7 +9,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
+import com.itemedit.light.utils.CompatRunnable;
 
 public class HeatWave extends Ability {
     private final ItemEditLight plugin;
@@ -28,7 +28,7 @@ public class HeatWave extends Ability {
         Location origin = player.getLocation();
         player.getWorld().playSound(origin, Sound.ENTITY_BLAZE_SHOOT, 1.2f, 0.8f);
 
-        new BukkitRunnable() {
+        new CompatRunnable() {
             double currentRadius = 1.0;
 
             @Override
@@ -63,7 +63,7 @@ public class HeatWave extends Ability {
 
                 currentRadius += 1.0;
             }
-        }.runTaskTimer(plugin, 0L, 2L);
+        }.runTaskTimer(plugin, player, 0L, 2L);
 
         return true;
     }
